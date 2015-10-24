@@ -10,7 +10,7 @@ sys.setdefaultencoding("utf-8")
 #Parametros
 arcpy.env.overwriteOutput=True
 tablaEntrada=r"X:\PRUEBAS\ReportePagos_2015\Datos_Prueba.gdb\DATOS_PRUEBA"
-tablaEstadisticas=r"X:\PRUEBAS\ReportePagos_2015\Datos_Prueba.gdb\Estadisticas"
+tablaEstadisticas="in_memory\TablaEstadisticas"
 
 
 def calcularDescripcion(tabla,dominio,campo):
@@ -33,19 +33,40 @@ def TablaArray(table,fields):
         encabezado=[]
         for field in fields:
             if field == "ACTIVIDAD":
-                encabezado.append("Actividad Relacionada Segun Contrato")
-            if field == "SUM_AREA":
+                encabezado.append("Actividades Relacionada \n segun Contrato")
+            elif field == "SUM_AREA":
                 encabezado.append("Area HA")
-            if field == "SUM_AREA":
-                encabezado.append("Area HA")
-
-        array.append(field)
+            elif field == "SUM_VALOR_PAGADO":
+                encabezado.append("Valor")
+            else:
+                encabezado.append(field.title())
+        array.append(encabezado)
+        print encabezado
         for row in rows:
             arrayrow=[]
             for field in fields:
                 arrayrow.append(row.getValue(field))
             array.append(arrayrow)
         return array
+def suma(table,campo):
+    rows = arcpy.SearchCursor(table)
+    sumatoria=0
+    for row in rows:
+        sum=row.getValue(campo)
+        sumatoria+=sum
+    return sumatoria
+
+def valorUnico(table,campo):
+    rows = arcpy.SearchCursor(table)
+    PrimerValor=""
+    for row in rows:
+        PrimerValor=row.getValue(campo)
+        break
+    else:
+        pass
+    return PrimerValor
+
+
 
 camposSum= [["AREA","SUM"],["VALOR_PAGADO","SUM"]]
 camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO"]
@@ -57,7 +78,7 @@ calcularDescripcion(tablaEstadisticas,"Dom_Proyecto_Pagos","PROYECTO")
 
 data=TablaArray(tablaEstadisticas,fields)
 
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter, cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER,TA_JUSTIFY,TA_LEFT,TA_RIGHT
@@ -67,7 +88,7 @@ from reportlab.lib import colors
 
 ####################
 width, height = letter
-doc = SimpleDocTemplate("X:\PRUEBAS\PDF\simple_table_grid24.pdf", pagesize=letter)
+doc = SimpleDocTemplate("X:\PRUEBAS\PDF\simple_table_grid1.pdf", pagesize=letter)
 elements = []
 #Alineacion
 
@@ -129,11 +150,32 @@ elements.append(Spacer(0, inch*.2))
 
 
 
-t=Table(data,style=[
+t=Table(data,colWidths=[8 * cm, 2 * cm, 2 * cm,2* cm, 2 * cm],rowHeights = [1*cm]* len(data),
+                style=[
                 ('BOX', (0,0), (-1,-1), 0.25, colors.black),
-                ('FONTSIZE', (0,0), (-1, -1),4),
+                ('FONT', (0,0),(4,0),'Helvetica-Bold',12),
+                ('FONTSIZE', (0,0), (-1, -1),6),
                 ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
                 ])
 
 elements.append(t)
+
+Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(int(suma(tablaEstadisticas,"SUM_VALOR_PAGADO")))),styles["Right"])
+elements.append(Spacer(0, inch*.1))
+elements.append(Sumatorias)
+elements.append(Spacer(0, inch*.5))
+print str(valorUnico(tablaEntrada,"CONTRATISTA"))
+firma= ["Nombre del Contratista: %s"%(str(valorUnico(tablaEntrada,"CONTRATISTA"))),"Vo.Bo Supervisor: __________________________"]
+firmaCotratista=["Firma: ___________________________","Vo.Bo Interventor: __________________________"]
+footer=[]
+footer.append(firma)
+footer.append(firmaCotratista)
+t=Table(footer,style=[
+                ('BOX', (0,0), (-1,-1), 0.25, colors.white),
+                ('FONTSIZE', (0,0), (-1, -1),10),
+                ('INNERGRID', (0,0), (-1,-1), 0.25, colors.white),
+                ])
+
+elements.append(t)
+
 doc.build(elements)
