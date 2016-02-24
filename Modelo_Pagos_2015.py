@@ -4,8 +4,8 @@
 __author__ = 'fernando.gonzalez'
 import arcpy,sys,os
 
-arcpy.CreatePersonalGDB_management(r"C:\Documents and Settings\alberto\Mis documentos\Modelo_Pagos_2016","Pagos.mdb")
-Geodatabase =r"C:\Documents and Settings\alberto\Mis documentos\Modelo_Pagos_2016"+os.sep+"Pagos.mdb"
+arcpy.CreatePersonalGDB_management(r"X:\PRUEBAS\Reporte_Pagos_2016","Pagos.mdb")
+Geodatabase =r"X:\PRUEBAS\Reporte_Pagos_2016"+os.sep+"Pagos.mdb"
 #Tablas
 Control_Calidad=arcpy.CreateTable_management(Geodatabase,"PAGOS_CONTROL_CALIDAD_V1")
 Edicion=arcpy.CreateTable_management(Geodatabase,"PAGOS_EDICION_V1")
@@ -17,6 +17,7 @@ arcpy.AddMessage("Creando Campos Control Calidad....")
 
 arcpy.AddField_management(Control_Calidad,"PROYECTO_PLANCHA","TEXT","","","50","Indentificador Proyecto y Plancha")
 arcpy.AddField_management(Control_Calidad,"PLANCHA","TEXT","","","20","Identificador de la Plancha")
+arcpy.AddField_management(Control_Calidad,"CONTRATISTA","TEXT","","","255","Nombre del Contratista")
 arcpy.AddField_management(Control_Calidad,"PROYECTO","TEXT","","","50","Proyecto al que corresponde la plancha")
 arcpy.AddField_management(Control_Calidad,"ACTIVIDAD","TEXT","","","100","Actividad del Contrato")
 arcpy.AddField_management(Control_Calidad,"ESCALA","TEXT","","","20","Escala de la plancha reportada")
@@ -29,6 +30,7 @@ arcpy.AddMessage("Creando Campos Edicion....")
 
 arcpy.AddField_management(Edicion,"PROYECTO_PLANCHA","TEXT","","","50","Indentificador Proyecto y Plancha")
 arcpy.AddField_management(Edicion,"PLANCHA","TEXT","","","20","Identificador de la Plancha")
+arcpy.AddField_management(Control_Calidad,"CONTRATISTA","TEXT","","","255","Nombre del Contratista")
 arcpy.AddField_management(Edicion,"PROYECTO","TEXT","","","50","Proyecto al que corresponde la plancha")
 arcpy.AddField_management(Edicion,"ACTIVIDAD","TEXT","","","100","Actividad del Contrato")
 arcpy.AddField_management(Edicion,"ESCALA","TEXT","","","20","Escala de la plancha reportada")
@@ -41,6 +43,7 @@ arcpy.AddMessage("Creando Campos Control Captura...")
 
 arcpy.AddField_management(Control_Captura,"PROYECTO_PLANCHA","TEXT","","","50","Indentificador Proyecto y Plancha")
 arcpy.AddField_management(Control_Captura,"PLANCHA","TEXT","","","20","Identificador de la Plancha")
+arcpy.AddField_management(Control_Calidad,"CONTRATISTA","TEXT","","","255","Nombre del Contratista")
 arcpy.AddField_management(Control_Captura,"PROYECTO","TEXT","","","50","Proyecto al que corresponde la plancha")
 arcpy.AddField_management(Control_Captura,"ACTIVIDAD","TEXT","","","100","Actividad del Contrato")
 arcpy.AddField_management(Control_Captura,"ESCALA","TEXT","","","20","Escala de la plancha reportada")
@@ -53,6 +56,7 @@ arcpy.AddMessage("Creando Campos Mantenimiento de Bases....")
 
 arcpy.AddField_management(Mantenimiento_Bases,"PROYECTO_PLANCHA","TEXT","","","50","Indentificador Proyecto y Plancha")
 arcpy.AddField_management(Mantenimiento_Bases,"PLANCHA","TEXT","","","20","Identificador de la Plancha")
+arcpy.AddField_management(Control_Calidad,"CONTRATISTA","TEXT","","","255","Nombre del Contratista")
 arcpy.AddField_management(Mantenimiento_Bases,"PROYECTO","TEXT","","","50","Proyecto al que corresponde la plancha")
 arcpy.AddField_management(Mantenimiento_Bases,"ACTIVIDAD","TEXT","","","100","Actividad del Contrato")
 arcpy.AddField_management(Mantenimiento_Bases,"ESCALA","TEXT","","","20","Escala de la plancha reportada")
@@ -63,7 +67,7 @@ arcpy.AddField_management(Mantenimiento_Bases,"VALOR_ACTIVIDAD","DOUBLE","","","
 
 
 #Creacion de Dominios
-arcpy.env.workspace=r"C:\Documents and Settings\alberto\Mis documentos\Modelo_Pagos_2016\DOMINIOS.mdb"
+arcpy.env.workspace=r"X:\PRUEBAS\Reporte_Pagos_2016\DOMINIOS.mdb"
 listaTablas = arcpy.ListTables()
 
 for tabla in listaTablas:
@@ -87,3 +91,10 @@ for tabla in listaTablas:
         arcpy.AssignDomainToField_management(Edicion,"UNIDAD_MEDICION",tabla)
         arcpy.AssignDomainToField_management(Control_Captura,"UNIDAD_MEDICION",tabla)
         arcpy.AssignDomainToField_management(Mantenimiento_Bases,"UNIDAD_MEDICION",tabla)
+    elif tabla == "Dom_Proyecto_2016":
+        arcpy.AssignDomainToField_management(Control_Calidad,"PROYECTO",tabla)
+        arcpy.AssignDomainToField_management(Edicion,"PROYECTO",tabla)
+        arcpy.AssignDomainToField_management(Control_Captura,"PROYECTO",tabla)
+        arcpy.AssignDomainToField_management(Mantenimiento_Bases,"PROYECTO",tabla)
+
+
