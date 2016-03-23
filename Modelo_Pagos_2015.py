@@ -3,8 +3,8 @@
 __author__ = 'fernando.gonzalez'
 import arcpy,sys,os
 
-arcpy.CreatePersonalGDB_management(r"X:\PRUEBAS\Reporte_Pagos_2016","Pagos_V10.mdb","10.0")
-Geodatabase =r"X:\PRUEBAS\Reporte_Pagos_2016"+os.sep+"Pagos_V10.mdb"
+arcpy.CreatePersonalGDB_management(r"X:\PRUEBAS\Reporte_Pagos_2016","Pagos_V3.mdb","10.0")
+Geodatabase =r"X:\PRUEBAS\Reporte_Pagos_2016"+os.sep+"Pagos_V3.mdb"
 #Tablas
 Control_Calidad=arcpy.CreateTable_management(Geodatabase,"PAGOS_CONTROL_CALIDAD_V1")
 Edicion=arcpy.CreateTable_management(Geodatabase,"PAGOS_EDICION_V1")

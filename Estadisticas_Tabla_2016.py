@@ -5,8 +5,8 @@ import os
 import sys
 import arcpy
 import datetime
-#reload(sys)
-#sys.setdefaultencoding("utf8")
+reload(sys)
+sys.setdefaultencoding("ISO-8859-1")
 
 from reportlab.lib.pagesizes import letter, cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
@@ -18,27 +18,28 @@ from reportlab.lib import colors
 styles=getSampleStyleSheet()
 styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
 styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
-styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER))
+styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontSize=8))
 styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
-styles.add(ParagraphStyle(name='Tabla', alignment=TA_JUSTIFY, fontSize=6.5))
+styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=7,leading=8))
 
 #importar utf8
 #Parametros
-#arcpy.env.overwriteOutput=True
-#tablaEntrada=r"X:\PRUEBAS\ReportePagos_2015\Datos_Prueba.gdb\DATOS_PRUEBA"
+arcpy.env.overwriteOutput=True
+tablaEntrada=r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\Pagos_V3.mdb\PAGOS_EDICION_V1"
 #tablaEstadisticas="in_memory\TablaEstadisticas"
-#ActividadContractual="Edicion"
-#pdfSalida =r"X:\PRUEBAS\PDF\simple_table_grid13.pdf"
-#NoContrato="12245-2013"
-#periodo = "2015-01-01 al 2015-02-01"
+ActividadContractual="Edicion"
+reportarPeriodo="true"
+pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba2.pdf"
+NoContrato="12245-2013"
+periodo = "2015-01-01 al 2015-02-01"
 #Parametros
 
-tablaEntrada=sys.argv[1]
-ActividadContractual=sys.argv[2]
-NoContrato=sys.argv[3]
-reportarPeriodo=sys.argv[4]
-periodo = sys.argv[5]
-pdfSalida =sys.argv[6]
+#tablaEntrada=sys.argv[1]
+#ActividadContractual=sys.argv[2]
+#NoContrato=sys.argv[3]
+#reportarPeriodo=sys.argv[4]
+#periodo = sys.argv[5]
+#pdfSalida =sys.argv[6]
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
 
@@ -68,11 +69,13 @@ def TablaArray(table,fields):
 
         for field in fields:
             if field == "ACTIVIDAD":
-                encabezado.append(Paragraph("<B>Actividades Relacionadas según Contrato</B>",styles["Center"]))
-            elif field == "SUM_ADMIN_GIT_PC_PAGOS_AREA":
-                encabezado.append(Paragraph("<B>Area HA</B>",styles["Center"]))
-            elif field == "SUM_VALOR_PAGADO":
+                encabezado.append(Paragraph(latin1toUTF8("<B>Actividades Relacionadas según Contrato</B>"),styles["Center"]))
+            elif field == "SUM_NUMERO_UNIDADES":
+                encabezado.append(Paragraph("<B>No Unidades</B>",styles["Center"]))
+            elif field == "SUM_VALOR_ACTIVIDAD":
                 encabezado.append(Paragraph("<B>Valor</B>",styles["Center"]))
+            elif field == "UNIDAD_MEDICION":
+                encabezado.append(Paragraph(latin1toUTF8("<B>Unidad Medición</B>"),styles["Center"]))
             else:
                 encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center"]))
         array.append(encabezado)
@@ -83,7 +86,7 @@ def TablaArray(table,fields):
                 if row.getValue(field)==None:
                     arrayrow.append(Paragraph("",styles["Tabla"]))
                 else:
-                    arrayrow.append(Paragraph(str(row.getValue(field)),styles["Tabla"]))
+                    arrayrow.append(Paragraph(latin1toUTF8(str(row.getValue(field))),styles["Tabla"]))
             array.append(arrayrow)
         return array
     except Exception as e:
@@ -116,19 +119,25 @@ def valorUnico(table,campo):
         arcpy.AddMessage("Error En el Campo Responsable: "+ e.message)
         return ""
 
+def latin1toUTF8(s):
+    return unicode(s, "iso-8859-1").encode("utf-8")
+
 
 result = int(arcpy.GetCount_management(tablaEntrada).getOutput(0))
 if result<2000:
     try:
-        camposSum= [["ADMIN_GIT_PC.PAGOS.AREA","SUM"],["VALOR_PAGADO","SUM"]]
-        camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO"]
-        fields=["ACTIVIDAD","PROYECTO","ESCALA","SUM_ADMIN_GIT_PC_PAGOS_AREA","SUM_VALOR_PAGADO"]
-        arcpy.Statistics_analysis(tablaEntrada, tablaEstadisticas, camposSum, camposUnicos)
-        calcularDescripcion(tablaEstadisticas,"DOM_PAGOS_ESCALA","ESCALA")
-        calcularDescripcion(tablaEstadisticas,"Dom_Actividad_Pagos","ACTIVIDAD")
-        calcularDescripcion(tablaEstadisticas,"Dom_Proyecto_Pagos2","PROYECTO")
-        data=TablaArray(tablaEstadisticas,fields)
 
+        camposSum= [["NUMERO_UNIDADES","SUM"],["VALOR_ACTIVIDAD","SUM"]]
+        camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO","UNIDAD_MEDICION"]
+        fields=["ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","SUM_NUMERO_UNIDADES","SUM_VALOR_ACTIVIDAD"]
+        arcpy.Statistics_analysis(tablaEntrada, tablaEstadisticas, camposSum, camposUnicos)
+        calcularDescripcion(tablaEstadisticas,"Dom_Escala_Pagos","ESCALA")
+        calcularDescripcion(tablaEstadisticas,"Dom_Actividades_Pagos_ED","ACTIVIDAD")
+        calcularDescripcion(tablaEstadisticas,"Dom_Proyecto_2016","PROYECTO")
+        calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
+
+        data=TablaArray(tablaEstadisticas,fields)
+        print data
         ##Formateo de Actividad y Proyecto
 
         ####################
@@ -142,20 +151,20 @@ if result<2000:
         fecha= datetime.date.today()
         hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
 
-        fechapara=Paragraph(hoy, styles["Left"])
+        fechapara=Paragraph(latin1toUTF8(hoy), styles["Left"])
         elements.append(fechapara)
 
         elements.append(Spacer(0, inch*.3))
 
         # creamos título con estilo
-        titulo = Paragraph("INFORME DE PRODUCCIÓN",styles["Center"])
+        titulo = Paragraph(latin1toUTF8("INFORME DE PRODUCCIÓN"),styles["Center"])
         elements.append(titulo)
         # Contrato
         contratotxt = Paragraph("CONTRATO No. <strong>%s</strong>"%(NoContrato),styles["Center"])
         elements.append(contratotxt)
         #Periodo
         if reportarPeriodo=="true":
-            periodotxt=Paragraph("Periódo a Reportar <strong>%s</strong>"%(periodo),styles["Center"])
+            periodotxt=Paragraph(latin1toUTF8("Periódo a Reportar <strong>%s</strong>"%(periodo)),styles["Center"])
             elements.append(periodotxt)
         elements.append(Spacer(0, inch*.3))
 
@@ -240,22 +249,22 @@ if result<2000:
 
 
         for text in actividades(ActividadContractual):
-            para = Paragraph(text, styles["Justify"])
+            para = Paragraph(latin1toUTF8(text), styles["Justify"])
             elements.append(para)
         # espacio adicional
         elements.append(Spacer(0, inch*.2))
 
-        t=Table(data,colWidths=[7 * cm, 3 * cm, 2 * cm,2* cm, 2 * cm],rowHeights = [1.3*cm]* len(data),
+        t=Table(data,colWidths=[7 * cm, 3 * cm, 1.5 * cm,3* cm, 2 * cm, 2 * cm],rowHeights = [1.1*cm]* len(data),
                         style=[
                         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
-                        ('FONT', (0,0),(4,0),'Helvetica-Bold',12),
+                        ('FONT', (0,0),(4,0),'Helvetica-Bold',10),
                         ('FONTSIZE', (0,0), (-1, -1),6),
                         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.black),
                          ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
                         ])
         elements.append(t)
 
-        Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(round(suma(tablaEstadisticas,"SUM_VALOR_PAGADO"),2))),styles["Right"])
+        Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(round(suma(tablaEstadisticas,"SUM_VALOR_ACTIVIDAD"),2))),styles["Right"])
         elements.append(Spacer(0, inch*.1))
         elements.append(Sumatorias)
         elements.append(Spacer(0, inch*.5))
