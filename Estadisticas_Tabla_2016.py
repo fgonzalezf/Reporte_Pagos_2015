@@ -43,6 +43,8 @@ periodo = "2015-01-01 al 2015-02-01"
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
 
+
+
 def calcularDescripcion(tabla,dominio,campo):
     try:
         desc=arcpy.Describe(tablaEntrada)
@@ -104,7 +106,6 @@ def suma(table,campo):
         arcpy.AddMessage("Error sumando Campo: " + e.message)
         return 0.0
 
-
 def valorUnico(table,campo):
     rows = arcpy.SearchCursor(table)
     PrimerValor=""
@@ -122,9 +123,32 @@ def valorUnico(table,campo):
 def latin1toUTF8(s):
     return unicode(s, "iso-8859-1").encode("utf-8")
 
+def validarCompletitud (tabla):
+    fields=arcpy.ListFields(tabla)
+    completo=[True,"",""]
+    for field in fields:
+
+        if field.name!="OBSERVACIONES" and completo[0]==True :
+            print field.name
+            rows=arcpy.SearchCursor(tabla)
+            for row in rows:
+                print row.getValue(field.name)
+                if row.getValue(field.name)== None:
+                    completo[0]=False
+                    completo[1]=field.name
+                    completo[2]=row.getValue("OBJECTID")
+                    break
+        else:
+            break
+    return completo
+
+
+
 
 result = int(arcpy.GetCount_management(tablaEntrada).getOutput(0))
-if result<2000:
+validacion=validarCompletitud(tablaEntrada)
+print(str(validacion[0]) + "  "+ validacion[1])
+if result<2000 and validacion[0]==True:
     try:
 
         camposSum= [["NUMERO_UNIDADES","SUM"],["VALOR_ACTIVIDAD","SUM"]]
@@ -137,7 +161,7 @@ if result<2000:
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
 
         data=TablaArray(tablaEstadisticas,fields)
-        print data
+        print str(validacion[0])
         ##Formateo de Actividad y Proyecto
 
         ####################
@@ -288,5 +312,10 @@ if result<2000:
     except Exception as e:
         arcpy.AddMessage("Error Creando PDF " + e.message)
 else:
-    arcpy.AddMessage("Debe realizar un Query o una seleccion a la tabla, Intentelo de nuevo")
+    arcpy.AddWarning("...Celda Nula en el Campo: %s en el OBJECTID: %s..."%(validacion[1], validacion[2]) )
+    arcpy.AddWarning("...La Tabla esta incompleta....")
+    arcpy.AddWarning("...Complete la Tabla en todos los campos Obligatorios (Solo el Campo OBSERVACIONES es opcional....)")
+
+
+
 
