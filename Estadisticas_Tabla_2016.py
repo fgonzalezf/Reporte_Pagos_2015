@@ -6,7 +6,7 @@ import sys
 import arcpy
 import datetime
 reload(sys)
-sys.setdefaultencoding("ISO-8859-1")
+sys.setdefaultencoding("iso-8859-1")
 
 from reportlab.lib.pagesizes import letter, cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table
@@ -20,26 +20,26 @@ styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
 styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
 styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontSize=8))
 styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
-styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=7,leading=8))
+styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6.5,leading=7.5))
 
 #importar utf8
 #Parametros
 arcpy.env.overwriteOutput=True
-tablaEntrada=r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\Pagos_V3.mdb\PAGOS_EDICION_V1"
+#tablaEntrada=r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\Pagos_V3.mdb\PAGOS_EDICION_V1"
 #tablaEstadisticas="in_memory\TablaEstadisticas"
-ActividadContractual="Edicion"
-reportarPeriodo="true"
-pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba2.pdf"
-NoContrato="12245-2013"
-periodo = "2015-01-01 al 2015-02-01"
+#ActividadContractual="Edicion"
+#reportarPeriodo="true"
+#pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba2.pdf"
+#NoContrato="12245-2013"
+#periodo = "2015-01-01 al 2015-02-01"
 #Parametros
 
-#tablaEntrada=sys.argv[1]
-#ActividadContractual=sys.argv[2]
-#NoContrato=sys.argv[3]
-#reportarPeriodo=sys.argv[4]
-#periodo = sys.argv[5]
-#pdfSalida =sys.argv[6]
+tablaEntrada=sys.argv[1]
+ActividadContractual=sys.argv[2]
+NoContrato=sys.argv[3]
+reportarPeriodo=sys.argv[4]
+periodo = sys.argv[5]
+pdfSalida =sys.argv[6]
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
 
@@ -64,8 +64,8 @@ def calcularDescripcion(tabla,dominio,campo):
         arcpy.AddMessage("Error Calculando Descripcion: "+ e.message)
 
 def TablaArray(table,fields):
-    array=[]
-    try:
+        array=[]
+    #try:
         rows = arcpy.SearchCursor(table)
         encabezado=[]
 
@@ -81,19 +81,20 @@ def TablaArray(table,fields):
             else:
                 encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center"]))
         array.append(encabezado)
-        print encabezado
+        #print encabezado
         for row in rows:
             arrayrow=[]
             for field in fields:
                 if row.getValue(field)==None:
                     arrayrow.append(Paragraph("",styles["Tabla"]))
                 else:
-                    arrayrow.append(Paragraph(latin1toUTF8(str(row.getValue(field))),styles["Tabla"]))
+                    arrayrow.append(Paragraph(latin1toUTF82(str(row.getValue(field))),styles["Tabla"]))
             array.append(arrayrow)
         return array
-    except Exception as e:
-        arcpy.AddMessage(e.message)
-        return array
+    #except Exception as e:
+        #arcpy.AddMessage(e.message)
+        #return array
+
 def suma(table,campo):
     rows = arcpy.SearchCursor(table)
     try:
@@ -120,8 +121,23 @@ def valorUnico(table,campo):
         arcpy.AddMessage("Error En el Campo Responsable: "+ e.message)
         return ""
 
+def DominioCampo(Tabla,Campo):
+    fields = arcpy.ListFields(Tabla)
+    dominio=""
+    for field in fields:
+        if field.name ==Campo:
+            dominio= field.domain
+    return dominio
 def latin1toUTF8(s):
-    return unicode(s, "iso-8859-1").encode("utf-8")
+    if s==None:
+        return ""
+    else:
+        return unicode(s, "iso-8859-1").encode("iso-8859-1")
+def latin1toUTF82(s):
+    if s==None:
+        return ""
+    else:
+        return unicode(s, "iso-8859-1").encode("utf-8")
 
 def validarCompletitud (tabla):
     fields=arcpy.ListFields(tabla)
@@ -129,10 +145,10 @@ def validarCompletitud (tabla):
     for field in fields:
 
         if field.name!="OBSERVACIONES" and completo[0]==True :
-            print field.name
+            #print field.name
             rows=arcpy.SearchCursor(tabla)
             for row in rows:
-                print row.getValue(field.name)
+                #print row.getValue(field.name)
                 if row.getValue(field.name)== None:
                     completo[0]=False
                     completo[1]=field.name
@@ -147,23 +163,41 @@ def validarCompletitud (tabla):
 
 result = int(arcpy.GetCount_management(tablaEntrada).getOutput(0))
 validacion=validarCompletitud(tablaEntrada)
-print(str(validacion[0]) + "  "+ validacion[1])
+#print(str(validacion[0]) + "  "+ validacion[1])
 if result<2000 and validacion[0]==True:
     try:
 
         camposSum= [["NUMERO_UNIDADES","SUM"],["VALOR_ACTIVIDAD","SUM"]]
-        camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO","UNIDAD_MEDICION"]
+        camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO","UNIDAD_MEDICION","CONTRATISTA"]
         fields=["ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","SUM_NUMERO_UNIDADES","SUM_VALOR_ACTIVIDAD"]
         arcpy.Statistics_analysis(tablaEntrada, tablaEstadisticas, camposSum, camposUnicos)
+        #Dominio Contratista
+        contratista=""
+        try:
+            dom = DominioCampo(tablaEntrada,"CONTRATISTA")
+            calcularDescripcion(tablaEstadisticas,dom,"CONTRATISTA")
+            contratista=str(valorUnico(tablaEstadisticas,"CONTRATISTA"))
+            arcpy.AddMessage("El contratista es: "+contratista)
+            arcpy.DeleteField_management(tablaEstadisticas,"CONTRATISTA")
+
+        except  Exception as e:
+            arcpy.AddMessage("Error Calculando dominio Contratista..." + e.message)
+
+        try:
+            dom = DominioCampo(tablaEntrada,"ACTIVIDAD")
+            calcularDescripcion(tablaEstadisticas,dom,"ACTIVIDAD")
+
+        except  Exception as e:
+            arcpy.AddMessage("Error Calculando dominio Contratista..." + e.message)
+
         calcularDescripcion(tablaEstadisticas,"Dom_Escala_Pagos","ESCALA")
-        calcularDescripcion(tablaEstadisticas,"Dom_Actividades_Pagos_ED","ACTIVIDAD")
         calcularDescripcion(tablaEstadisticas,"Dom_Proyecto_2016","PROYECTO")
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
-
+        arcpy.AddMessage("Convirtiendo tabla")
         data=TablaArray(tablaEstadisticas,fields)
-        print str(validacion[0])
+        #print str(validacion[0])
         ##Formateo de Actividad y Proyecto
-
+        arcpy.AddMessage("Tabla convertida")
         ####################
         width, height = letter
         doc = SimpleDocTemplate(pdfSalida, pagesize=letter)
@@ -214,7 +248,7 @@ if result<2000 and validacion[0]==True:
                 texActividades.append("2.3 Realizar los complementos y ajustes necesarios que resulten del control digital y de los procesos de revisión y control de calidad y los lineamientos del coordinador del proyecto.")
                 texActividades.append("2.4 Diligenciar y documentar las actividades de acuerdo con los formatos establecidos por la subdirección de geografía y cartografía.")
                 texActividades.append("2.12 Verificar los empalmes para cada una de las hojas en cada uno de los lados que esta  presente y para cada uno de los elementos cartograficos.")
-            elif Actividad=="Actualizacion 100K":
+            elif Actividad=="Mantenimiento":
                 texActividades.append("Obligaciones del contratista:")
                 texActividades.append("2.1 Cumplir con el plan de trabajo establecido para el objecto a desarrollar.")
                 texActividades.append("2.2 Realizar la captura de los elementos planimétricos conforme a las tolerancias para la escala, a partir de imágenes \
@@ -278,7 +312,7 @@ if result<2000 and validacion[0]==True:
         # espacio adicional
         elements.append(Spacer(0, inch*.2))
 
-        t=Table(data,colWidths=[7 * cm, 3 * cm, 1.5 * cm,3* cm, 2 * cm, 2 * cm],rowHeights = [1.1*cm]* len(data),
+        t=Table(data,colWidths=[6.5 * cm, 2 * cm, 1.5 * cm,3* cm, 2 * cm, 2 * cm],rowHeights = [1.1*cm]* len(data),
                         style=[
                         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
                         ('FONT', (0,0),(4,0),'Helvetica-Bold',10),
@@ -292,9 +326,9 @@ if result<2000 and validacion[0]==True:
         elements.append(Spacer(0, inch*.1))
         elements.append(Sumatorias)
         elements.append(Spacer(0, inch*.5))
-        print str(valorUnico(tablaEntrada,"CONTRATISTA"))
-        firma= ["Nombre del Contratista: %s"%(str(valorUnico(tablaEntrada,"CONTRATISTA"))),"Vo.Bo Supervisor: ______________________________"]
-        firmaCotratista=["Firma: ______________________________  "," Vo.Bo Interventor: ______________________________  "]
+        #print str(valorUnico(tablaEntrada,"CONTRATISTA"))
+        firma= ["Nombre del Contratista: %s"%(contratista),"Vo.Bo Supervisor: __________________________________"]
+        firmaCotratista=["Firma: __________________________________  "," Vo.Bo Interventor: __________________________________  "]
         footer=[]
         footer.append(firma)
         footer.append(firmaCotratista)
