@@ -16,11 +16,12 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 
 styles=getSampleStyleSheet()
-styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY))
-styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT))
+styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY, fontSize=8))
+styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT, fontSize=8))
 styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontSize=8))
-styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT))
-styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6.5,leading=7.5))
+styles.add(ParagraphStyle(name='Center_Table', alignment=TA_CENTER, fontSize=6.5,leading=7.5))
+styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT, fontSize=8))
+styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6,leading=6.5))
 
 #importar utf8
 #Parametros
@@ -45,10 +46,27 @@ tablaEstadisticas="in_memory\TablaEstadisticas"
 
 
 
+
+def CrearConexionPagos():
+    RutaGDB= os.getenv('APPDATA')+ os.sep+"conexion.sde"
+    if arcpy.Exists(RutaGDB)==False:
+        arcpy.CreateArcSDEConnectionFile_management(os.getenv('APPDATA'),
+                                            "conexion.sde",
+                                            "172.17.2.247",
+                                            '5151',
+                                            '',
+                                            "DATABASE_AUTH",
+                                            'PAGOS',
+                                            'PagosGitPc',
+                                            'SAVE_USERNAME',
+                                            'SDE.DEFAULT',
+                                            'SAVE_VERSION')
+    return RutaGDB
+
 def calcularDescripcion(tabla,dominio,campo):
     try:
-        desc=arcpy.Describe(tablaEntrada)
-        arcpy.DomainToTable_management(os.path.dirname(desc.catalogPath),dominio,"in_memory/dominioOut","codigo","descripcion")
+        workspace=CrearConexionPagos()
+        arcpy.DomainToTable_management(workspace,dominio,"in_memory/dominioOut","codigo","descripcion")
         rows= arcpy.SearchCursor("in_memory/dominioOut")
         dom={}
         for row in rows:
@@ -64,22 +82,22 @@ def calcularDescripcion(tabla,dominio,campo):
         arcpy.AddMessage("Error Calculando Descripcion: "+ e.message)
 
 def TablaArray(table,fields):
-        array=[]
-    #try:
+    array=[]
+    try:
         rows = arcpy.SearchCursor(table)
         encabezado=[]
 
         for field in fields:
             if field == "ACTIVIDAD":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Actividades Relacionadas según Contrato</B>"),styles["Center"]))
+                encabezado.append(Paragraph(latin1toUTF8("<B>Actividades Relacionadas según Contrato</B>"),styles["Center_Table"]))
             elif field == "SUM_NUMERO_UNIDADES":
-                encabezado.append(Paragraph("<B>No Unidades</B>",styles["Center"]))
+                encabezado.append(Paragraph("<B>No Unidades</B>",styles["Center_Table"]))
             elif field == "SUM_VALOR_ACTIVIDAD":
-                encabezado.append(Paragraph("<B>Valor</B>",styles["Center"]))
+                encabezado.append(Paragraph("<B>Valor</B>",styles["Center_Table"]))
             elif field == "UNIDAD_MEDICION":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Unidad Medición</B>"),styles["Center"]))
+                encabezado.append(Paragraph(latin1toUTF8("<B>Unidad Medición</B>"),styles["Center_Table"]))
             else:
-                encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center"]))
+                encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center_Table"]))
         array.append(encabezado)
         #print encabezado
         for row in rows:
@@ -91,8 +109,8 @@ def TablaArray(table,fields):
                     arrayrow.append(Paragraph(latin1toUTF82(str(row.getValue(field))),styles["Tabla"]))
             array.append(arrayrow)
         return array
-    #except Exception as e:
-        #arcpy.AddMessage(e.message)
+    except Exception as e:
+        arcpy.AddMessage(e.message)
         #return array
 
 def suma(table,campo):
@@ -200,7 +218,7 @@ if result<2000 and validacion[0]==True:
         arcpy.AddMessage("Tabla convertida")
         ####################
         width, height = letter
-        doc = SimpleDocTemplate(pdfSalida, pagesize=letter)
+        doc = SimpleDocTemplate(pdfSalida, pagesize=letter,rightMargin=51,leftMargin=51,topMargin=50,bottomMargin=18)
         elements = []
         #Alineacion
 
@@ -212,7 +230,7 @@ if result<2000 and validacion[0]==True:
         fechapara=Paragraph(latin1toUTF8(hoy), styles["Left"])
         elements.append(fechapara)
 
-        elements.append(Spacer(0, inch*.3))
+        elements.append(Spacer(0, inch*.2))
 
         # creamos título con estilo
         titulo = Paragraph(latin1toUTF8("INFORME DE PRODUCCIÓN"),styles["Center"])
@@ -274,18 +292,18 @@ if result<2000 and validacion[0]==True:
             elif Actividad=="Edicion":
                 texActividades.append("Obligaciones del contratista:")
                 texActividades.append("2.1 Realizar edición y estructuración topológica de cada uno de los elementos contenidos en cada una de las hojas cartográficas que le sean asignadas.")
-                texActividades.append("2.2 Cargar los campos que sean requeridos conforme a la base de datos.")
-                texActividades.append("2.3 Verificar la correcta estructuración de los elementos, de acuerdo a lo establecido por la Subdirección de Geografía y Cartografía.")
-                texActividades.append("2.4 Verificar los empalmes digitales para cada una de las hojas, en cada uno de los elementos cartografiados.")
+                texActividades.append("2.2 Cargar los campos que sean requeridos conforme al modelo de datos.")
+                #texActividades.append("2.3 Verificar la correcta estructuración de los elementos, de acuerdo a lo establecido por la Subdirección de Geografía y Cartografía.")
+                #texActividades.append("2.4 Verificar los empalmes digitales para cada una de las hojas, en cada uno de los elementos cartografiados.")
                 texActividades.append("2.5 Verificar el correcto despliegue de la información transferida.")
-                texActividades.append("2.6 Realizar el control de calidad de la información cartográfica obtenida a partir de los procesos de compilación toponímica, estructuración base de datos para clasificación de campo, \
-                                      salidas gráficas preliminares y finales, según especificaciones y manuales establecidos por la Subdirección de Geografía y Cartografía.")
-                texActividades.append("2.7 Garantizar la consistencia temática, consistencia lógica, la cantidad de elementos, la correcta posición y ortografía de los textos y el correcto diligenciamiento de los formatos establecidos para el control.")
-                texActividades.append("2.8 Garantizar la calidad gráfica de  los elementos, textos, formatos de productos cartográficos a diferentes escalas elaborados por restitución fotogramétrica, de acuerdo con las asignaciones y plan del trabajo del área técnica.")
-                texActividades.append("2.9 Aceptar y realizar las complementaciones de información necesarias para la aprobación de las bases de datos cartográficas, así como las salidas gráficas según corresponda el proceso.")
-                texActividades.append("2.10 Verificar los empalmes digitales y gráficos para cada una de las hojas en cada uno de los lados que está presente y para cada uno de los elementos cartografiados, según los procesos asignados.")
-                texActividades.append("2.12 Diligenciar los formatos que identifican y documentan el flujo de producción establecidos por la subdirección, los cuales deben ir firmados, garantizando las actividades realizadas \
-                                      sobre cada una de las hojas, el no cumplimiento de las actividades señaladas en estos formatos o no documentación de las mismas, implica la no facturación de las hojas cartograficas trabajadas")
+                #texActividades.append("2.6 Garantizar la consistencia tema")
+                texActividades.append("2.6 Garantizar la consistencia temática, consistencia lógica, la cantidad de elementos, la correcta posición y ortografía de los textos y el correcto diligenciamiento de los formatos establecidos para el control.")
+                #texActividades.append("2.8 Garantizar la calidad gráfica de  los elementos, textos, formatos de productos cartográficos a diferentes escalas elaborados por restitución fotogramétrica, de acuerdo con las asignaciones y plan del trabajo del área técnica.")
+                texActividades.append("2.8 Verificar los empalmes digitales y gráficos para cada una de las hojas en cada uno de los lados que está presente y para cada uno de los elementos cartografiados, según los procesos asignados.")
+                texActividades.append("2.11 Cumplir con las especificaciones técnicas de productos asignados, de lo contrario constituira incumplimiento del contrato.")
+                texActividades.append("2.12 Generar alertas al supervisor sobre inconsistencias presentes en las hojas adyacentes de los respectivos bloques asignados (definido el bloque como la hoja a trabajar junto con sus cuatro hojas de empalme)")
+                texActividades.append("2.14 Corregir las inconsistencias que se encuentren en el producto entregado, definidos por el control de calidad.")
+                texActividades.append("2.19 Verificar actividades según tablas de pagos.")
             elif Actividad=="Estandarizacion":
                 texActividades.append("Obligaciones del contratista:")
                 texActividades.append("2.1. Verificar consistencia temática, lógica, grado de totalidad, posición de los elementos, exactitud de atributos (incluye ortografía), consistencia de dominio y formato en los insumos para la generalización de cartografía básica.")
@@ -303,6 +321,30 @@ if result<2000 and validacion[0]==True:
                 texActividades.append("2.5 Desarrollar los ploteos requeridos para el desarrollo de otros procesos como para su respectiva revisión.")
                 texActividades.append("2.6 Generar las salidas finales en papel de seguridad y/o pdf de acuerdo al formato establecido por el instituto para cada escala.")
                 texActividades.append("2.7 Diligenciar los formatos de metadatos y memoria técnica correspondiente a cada una de las hojas cartográficas efectuadas y por proyecto, de acuerdo a lo establecido por la subdirección de geografía y cartografía.")
+            elif Actividad=="Control Calidad Profesional":
+                texActividades.append("Obligaciones del contratista:")
+                texActividades.append("2.1 Verificar la calidad de los productos cartográficos, ortoimagen, compilación toponímica, base de datos cartográficas, salidas graficas preliminares y finales elaborados por los procesos de generación, actualización,\
+                                      generalización y mantenimiento de hojas cartográficas,  de acuerdo con las asignaciones y tablas de pagos establecidos.")
+                texActividades.append("2.2 Verificar la completitud de la captura a partir de imágenes satelitales, de acuerdo con el modelo de datos para la escala.")
+                texActividades.append("2.3 Realizar el diagnóstico de cada hoja cartográfica asignada y aceptarla si cumple con los parámetros de calidad en las especificaciones.")
+                texActividades.append("2.4 Realizar las complementaciones de información necesarias para la aprobación de las bases de datos cartográficas,así como las salidas gráficas según corresponda \
+                                          el proceso y asignación del supervisor.")
+                texActividades.append("2.7 Realizar la devolución de productos a su respectivo proveedor cuando no cumpla con los parámetros de calidad definidos en la especificación técnica.")
+                texActividades.append("2.9 Generar alertas al supervisor sobre inconsistencias presentes en las hojas adyacentes de los respectivos bloques asignados (definido el bloque como la hoja a trabajar junto con sus cuatro hojas de empalme)")
+                texActividades.append("2.11 Realizar los complementos y ajustes necesarios que resulten de los procesos de revisión y lineamientos del supervisor del proyecto.")
+                texActividades.append("2.14 Verificar los empalmes digitales y gráficos para cada una de las hojas en cada uno de los lados que está  presente y para cada uno de los elementos cartografiados, según los procesos asignados.")
+            elif Actividad=="Control Calidad Tecnico":
+                texActividades.append("2.1 Diagnosticar cada hoja cartográfica asignada y aceptarla si cumple con los parámetros de calidad en las especificaciones.")
+                texActividades.append("2.2 Realizar el control de calidad de los productos cartográficos, ortoimagen, compilación toponímica, base de datos cartográficas salidas gráfica preliminares y finales elaborados por los procesos de generación, \
+                                       actualización generalización y mantenimiento de hojas cartográficas de acuerdo con las asignaciones y tablas  de pagos establecidos.")
+                texActividades.append("2.4 Realizar las complementaciones de información necesarias para la aprobación de las bases de datos cartográficas,así como las salidas gráficas según corresponda \
+                                          el proceso y asignación del supervisor.")
+                texActividades.append("2.7 Realizar la devolución de productos a su respectivo proveedor cuando no cumpla con los parámetros de calidad definidos en la especificación técnica.")
+                texActividades.append("2.9 Generar alertas al supervisor sobre inconsistencias presentes en las hojas adyacentes de los respectivos bloques asignados (definido el bloque como la hoja a trabajar junto con sus cuatro hojas de empalme)")
+                texActividades.append("2.11 Realizar los complementos y ajustes necesarios que resulten de los procesos de revisión y lineamientos del supervisor del proyecto.")
+                texActividades.append("2.14 Verificar los empalmes digitales y gráficos para cada una de las hojas en cada uno de los lados que está  presente y para cada uno de los elementos cartografiados, según los procesos asignados.")
+
+
             return texActividades
 
 
@@ -312,7 +354,7 @@ if result<2000 and validacion[0]==True:
         # espacio adicional
         elements.append(Spacer(0, inch*.2))
 
-        t=Table(data,colWidths=[6.5 * cm, 2 * cm, 1.5 * cm,3* cm, 2 * cm, 2 * cm],rowHeights = [1.1*cm]* len(data),
+        t=Table(data,colWidths=[6.0 * cm, 3.5 * cm, 1.5 * cm,3* cm, 1.5 * cm, 2 * cm],rowHeights = [0.7*cm]* len(data),
                         style=[
                         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
                         ('FONT', (0,0),(4,0),'Helvetica-Bold',10),
@@ -325,9 +367,9 @@ if result<2000 and validacion[0]==True:
         Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(round(suma(tablaEstadisticas,"SUM_VALOR_ACTIVIDAD"),2))),styles["Right"])
         elements.append(Spacer(0, inch*.1))
         elements.append(Sumatorias)
-        elements.append(Spacer(0, inch*.5))
+        elements.append(Spacer(0, inch*.4))
         #print str(valorUnico(tablaEntrada,"CONTRATISTA"))
-        firma= ["Nombre del Contratista: %s"%(contratista),"Vo.Bo Supervisor: __________________________________"]
+        firma= ["Nombre del Contratista: %s"%(latin1toUTF82(contratista)),"Vo.Bo Supervisor: __________________________________"]
         firmaCotratista=["Firma: __________________________________  "," Vo.Bo Interventor: __________________________________  "]
         footer=[]
         footer.append(firma)
