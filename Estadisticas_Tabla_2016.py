@@ -386,6 +386,7 @@ if result<2000 and validacion[0]==True:
     except Exception as e:
         arcpy.AddMessage("Error Creando PDF " + e.message)
 else:
+
     arcpy.AddWarning("...Celda Nula en el Campo: %s en el OBJECTID: %s..."%(validacion[1], validacion[2]) )
     arcpy.AddWarning("...La Tabla esta incompleta....")
     arcpy.AddWarning("...Complete la Tabla en todos los campos Obligatorios (Solo el Campo OBSERVACIONES es opcional....)")
