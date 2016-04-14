@@ -221,9 +221,7 @@ if result<2000 and validacion[0]==True:
         doc = SimpleDocTemplate(pdfSalida, pagesize=letter,rightMargin=51,leftMargin=51,topMargin=50,bottomMargin=18)
         elements = []
         #Alineacion
-
         # FECHA
-
         fecha= datetime.date.today()
         hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
 
