@@ -212,6 +212,7 @@ if result<2000 and validacion[0]==True:
         calcularDescripcion(tablaEstadisticas,"Dom_Proyecto_2016","PROYECTO")
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
         arcpy.AddMessage("Convirtiendo tabla")
+
         data=TablaArray(tablaEstadisticas,fields)
         #print str(validacion[0])
         ##Formateo de Actividad y Proyecto
