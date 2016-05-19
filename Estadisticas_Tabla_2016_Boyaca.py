@@ -222,6 +222,7 @@ if result<2000 and validacion[0]==True:
 
         data=TablaArray(tablaEntrada,fields)
         print data
+
         ##Formateo de Actividad y Proyecto
         arcpy.AddMessage("Tabla convertida")
         ####################
