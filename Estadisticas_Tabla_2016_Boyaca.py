@@ -26,21 +26,21 @@ styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6,leading=6.
 #importar utf8
 #Parametros
 arcpy.env.overwriteOutput=True
-#tablaEntrada=r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\Pagos_V3.mdb\PAGOS_EDICION_V1"
+tablaEntrada=r"X:\PRUEBAS\BackUp Corporativa Control\BK_18_05_2016.mdb\PAGOS_EDICION"
 #tablaEstadisticas="in_memory\TablaEstadisticas"
-#ActividadContractual="Edicion"
-#reportarPeriodo="true"
-#pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba2.pdf"
-#NoContrato="12245-2013"
-#periodo = "2015-01-01 al 2015-02-01"
+ActividadContractual="Edicion"
+reportarPeriodo="false"
+pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba_B1.pdf"
+NoContrato="12245-2013"
+periodo = ""
 #Parametros
 
-tablaEntrada=sys.argv[1]
-ActividadContractual=sys.argv[2]
-NoContrato=sys.argv[3]
-reportarPeriodo=sys.argv[4]
-periodo = sys.argv[5]
-pdfSalida =sys.argv[6]
+#tablaEntrada=sys.argv[1]
+#ActividadContractual=sys.argv[2]
+#NoContrato=sys.argv[3]
+#reportarPeriodo=sys.argv[4]
+#periodo = sys.argv[5]
+#pdfSalida =sys.argv[6]
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
 
@@ -86,16 +86,22 @@ def TablaArray(table,fields):
     try:
         rows = arcpy.SearchCursor(table)
         encabezado=[]
-
+        x=["PLANCHA","ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","NUMERO_UNIDADES","VALOR_ACTIVIDAD","FECHA_INICIO","FECHA_FINALIZACION"]
         for field in fields:
-            if field == "ACTIVIDAD":
+            if field == "PLANCHA":
+                encabezado.append(Paragraph(latin1toUTF8("<B>Plancha</B>"),styles["Center_Table"]))
+            elif field == "ACTIVIDAD":
                 encabezado.append(Paragraph(latin1toUTF8("<B>Actividades Relacionadas según Contrato</B>"),styles["Center_Table"]))
-            elif field == "SUM_NUMERO_UNIDADES":
+            elif field == "NUMERO_UNIDADES":
                 encabezado.append(Paragraph("<B>No Unidades</B>",styles["Center_Table"]))
-            elif field == "SUM_VALOR_ACTIVIDAD":
+            elif field == "VALOR_ACTIVIDAD":
                 encabezado.append(Paragraph("<B>Valor</B>",styles["Center_Table"]))
             elif field == "UNIDAD_MEDICION":
                 encabezado.append(Paragraph(latin1toUTF8("<B>Unidad Medición</B>"),styles["Center_Table"]))
+            elif field == "FECHA_INICIO":
+                encabezado.append(Paragraph(latin1toUTF8("<B>Inicio</B>"),styles["Center_Table"]))
+            elif field == "FECHA_FINALIZACION":
+                encabezado.append(Paragraph(latin1toUTF8("<B>Finalización</B>"),styles["Center_Table"]))
             else:
                 encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center_Table"]))
         array.append(encabezado)
@@ -183,12 +189,13 @@ result = int(arcpy.GetCount_management(tablaEntrada).getOutput(0))
 validacion=validarCompletitud(tablaEntrada)
 #print(str(validacion[0]) + "  "+ validacion[1])
 if result<2000 and validacion[0]==True:
-    try:
+    #try:
 
         camposSum= [["NUMERO_UNIDADES","SUM"],["VALOR_ACTIVIDAD","SUM"]]
         camposUnicos= ["ESCALA","ACTIVIDAD","PROYECTO","UNIDAD_MEDICION","CONTRATISTA"]
-        fields=["ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","SUM_NUMERO_UNIDADES","SUM_VALOR_ACTIVIDAD"]
-        arcpy.Statistics_analysis(tablaEntrada, tablaEstadisticas, camposSum, camposUnicos)
+        fields=["PLANCHA","ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","NUMERO_UNIDADES","VALOR_ACTIVIDAD","FECHA_INICIO","FECHA_FINALIZACION"]
+        #arcpy.Statistics_analysis(tablaEntrada, tablaEstadisticas, camposSum, camposUnicos)
+        arcpy.TableToTable_conversion(tablaEntrada,"in_memory","TablaEstadisticas")
         #Dominio Contratista
         contratista=""
         try:
@@ -213,8 +220,8 @@ if result<2000 and validacion[0]==True:
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
         arcpy.AddMessage("Convirtiendo tabla")
 
-        data=TablaArray(tablaEstadisticas,fields)
-        #print str(validacion[0])
+        data=TablaArray(tablaEntrada,fields)
+        print data
         ##Formateo de Actividad y Proyecto
         arcpy.AddMessage("Tabla convertida")
         ####################
@@ -226,13 +233,13 @@ if result<2000 and validacion[0]==True:
         fecha= datetime.date.today()
         hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
 
-        fechapara=Paragraph(latin1toUTF8(hoy), styles["Left"])
+        fechapara=Paragraph(latin1toUTF82(hoy), styles["Left"])
         elements.append(fechapara)
 
         elements.append(Spacer(0, inch*.2))
 
         # creamos título con estilo
-        titulo = Paragraph(latin1toUTF8("INFORME DE PRODUCCIÓN"),styles["Center"])
+        titulo = Paragraph(latin1toUTF82("INFORME DE PRODUCCIÓN"),styles["Center"])
         elements.append(titulo)
         # Contrato
         contratotxt = Paragraph("CONTRATO No. <strong>%s</strong>"%(NoContrato),styles["Center"])
@@ -348,12 +355,12 @@ if result<2000 and validacion[0]==True:
 
 
         for text in actividades(ActividadContractual):
-            para = Paragraph(latin1toUTF8(text), styles["Justify"])
+            para = Paragraph(latin1toUTF82(text), styles["Justify"])
             elements.append(para)
         # espacio adicional
         elements.append(Spacer(0, inch*.2))
 
-        t=Table(data,colWidths=[6.0 * cm, 3.5 * cm, 1.5 * cm,3* cm, 1.5 * cm, 2 * cm],rowHeights = [0.7*cm]* len(data),
+        t=Table(data,colWidths=[3.0 * cm, 3.5 * cm, 1.5 * cm,3* cm, 1.5 * cm, 2 * cm,3* cm, 1.5 * cm, 2 * cm],rowHeights = [0.9*cm]* len(data),
                         style=[
                         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
                         ('FONT', (0,0),(4,0),'Helvetica-Bold',10),
@@ -384,8 +391,8 @@ if result<2000 and validacion[0]==True:
         del doc
         del data
         arcpy.Delete_management("in_memory\TablaEstadisticas")
-    except Exception as e:
-        arcpy.AddMessage("Error Creando PDF " + e.message)
+    #except Exception as e:
+        #arcpy.AddMessage("Error Creando PDF " + e.message)
 else:
 
     arcpy.AddWarning("...Celda Nula en el Campo: %s en el OBJECTID: %s..."%(validacion[1], validacion[2]) )
