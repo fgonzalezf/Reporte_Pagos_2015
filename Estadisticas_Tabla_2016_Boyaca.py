@@ -225,6 +225,7 @@ if result<2000 and validacion[0]==True:
         ##Formateo de Actividad y Proyecto
         arcpy.AddMessage("Tabla convertida")
         ####################
+
         width, height = letter
         doc = SimpleDocTemplate(pdfSalida, pagesize=letter,rightMargin=51,leftMargin=51,topMargin=50,bottomMargin=18)
         elements = []
