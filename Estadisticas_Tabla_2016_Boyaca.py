@@ -220,6 +220,7 @@ if result<2000 and validacion[0]==True:
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
         arcpy.AddMessage("Convirtiendo tabla")
 
+
         data=TablaArray(tablaEntrada,fields)
         print data
 
