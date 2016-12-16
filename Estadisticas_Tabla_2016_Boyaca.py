@@ -19,28 +19,30 @@ styles=getSampleStyleSheet()
 styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY, fontSize=8))
 styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT, fontSize=8))
 styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontSize=8))
-styles.add(ParagraphStyle(name='Center_Table', alignment=TA_CENTER, fontSize=6.5,leading=7.5))
+styles.add(ParagraphStyle(name='Center_Table', alignment=TA_CENTER, fontSize=5.5,leading=6.5))
 styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT, fontSize=8))
-styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6,leading=6.5))
+styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=5.5,leading=6))
 
 #importar utf8
 #Parametros
 arcpy.env.overwriteOutput=True
-tablaEntrada=r"X:\PRUEBAS\BackUp Corporativa Control\BK_18_05_2016.mdb\PAGOS_EDICION"
+#tablaEntrada=r"X:\PRUEBAS\BackUp Corporativa Control\BK_18_05_2016.mdb\PAGOS_EDICION"
 #tablaEstadisticas="in_memory\TablaEstadisticas"
-ActividadContractual="Edicion"
-reportarPeriodo="false"
-pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba_B1.pdf"
-NoContrato="12245-2013"
-periodo = ""
+#ActividadContractual="Edicion"
+#reportarPeriodo="false"
+#pdfSalida =r"X:\PRUEBAS\Reporte_Pagos_2016\PRUEBAS\prueba_B8.pdf"
+#NoContrato="12245-2013"
+#periodo = ""
 #Parametros
 
-#tablaEntrada=sys.argv[1]
-#ActividadContractual=sys.argv[2]
-#NoContrato=sys.argv[3]
-#reportarPeriodo=sys.argv[4]
-#periodo = sys.argv[5]
-#pdfSalida =sys.argv[6]
+tablaEntrada=sys.argv[1]
+ActividadContractual=sys.argv[2]
+NoContrato=sys.argv[3]
+reportarPeriodo=sys.argv[4]
+periodo = sys.argv[5]
+pdfSalida =sys.argv[6]
+fechaPersonalizada=sys.argv[7]
+fechaManual=sys.argv[8]
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
 
@@ -80,39 +82,95 @@ def calcularDescripcion(tabla,dominio,campo):
         arcpy.Delete_management("in_memory/dominioOut")
     except Exception as e:
         arcpy.AddMessage("Error Calculando Descripcion: "+ e.message)
+def ProcesoRealizado():
+            Proceso=""
+            if ActividadContractual=="Control Restitucion":
+                Proceso="CT_RE"
+            elif ActividadContractual=="Control Calidad Digital":
+                Proceso="CT_CA_DI"
+            elif ActividadContractual=="Mantenimiento":
+                Proceso="MA"
+            elif ActividadContractual=="Control Actualizacion":
+                Proceso="CO_AC"
+            elif ActividadContractual=="Control Calidad Grafico":
+                Proceso="CO_CA_GR"
+            elif ActividadContractual=="Edicion":
+                Proceso="ED_ES"
+            elif ActividadContractual=="Estandarizacion":
+                Proceso="ES"
+            elif ActividadContractual=="Metadato":
+                Proceso="ME"
+            elif ActividadContractual=="Control Calidad Profesional":
+                Proceso="CT_CA"
+            elif ActividadContractual=="Control Calidad Tecnico":
+                Proceso="CT_CA"
+            return Proceso
+
+def LegendaProceso():
+            LegProceso=ProcesoRealizado()
+            if LegProceso=="CT_RE":
+                Proceso="Control Calidad Restitución"
+            elif LegProceso=="CT_CA_DI" :
+                Proceso="Control de Calidad Digital"
+            elif LegProceso=="MA":
+                Proceso="Mantenimiento de Bases"
+            elif LegProceso=="CO_AC":
+                Proceso="Control de Calidad Actualización"
+            elif LegProceso=="CO_CA_GR":
+                Proceso="Control de Calidad Gráfico"
+            elif LegProceso=="ED_ES":
+                Proceso="Edición y Estructuración"
+            elif LegProceso=="ES":
+                Proceso="Estandarización"
+            elif LegProceso=="ME":
+                Proceso="Metadato"
+            elif LegProceso=="CT_CA":
+                Proceso="Control de Calidad"
+            return Proceso
+
 
 def TablaArray(table,fields):
     array=[]
     try:
-        rows = arcpy.SearchCursor(table)
+        rows = arcpy.SearchCursor(table,sort_fields="PLANCHA A")
         encabezado=[]
-        x=["PLANCHA","ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","NUMERO_UNIDADES","VALOR_ACTIVIDAD","FECHA_INICIO","FECHA_FINALIZACION"]
+        #x=["PLANCHA","ACTIVIDAD","PROYECTO","ESCALA","UNIDAD_MEDICION","NUMERO_UNIDADES","VALOR_ACTIVIDAD","FECHA_INICIO","FECHA_FINALIZACION"]
+        fields.append("PROCESO")
+        encabezado.append(Paragraph(latin1toUTF82("<B>Proceso</B>"),styles["Center_Table"]))
         for field in fields:
+
             if field == "PLANCHA":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Plancha</B>"),styles["Center_Table"]))
+                encabezado.append(Paragraph(latin1toUTF82("<B>Plancha</B>"),styles["Center_Table"]))
             elif field == "ACTIVIDAD":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Actividades Relacionadas según Contrato</B>"),styles["Center_Table"]))
+                encabezado.append(Paragraph(latin1toUTF82("<B>Actividades Relacionadas según Contrato</B>"),styles["Center_Table"]))
             elif field == "NUMERO_UNIDADES":
                 encabezado.append(Paragraph("<B>No Unidades</B>",styles["Center_Table"]))
             elif field == "VALOR_ACTIVIDAD":
                 encabezado.append(Paragraph("<B>Valor</B>",styles["Center_Table"]))
             elif field == "UNIDAD_MEDICION":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Unidad Medición</B>"),styles["Center_Table"]))
+                encabezado.append(Paragraph(latin1toUTF82("<B>Unidad Medición</B>"),styles["Center_Table"]))
             elif field == "FECHA_INICIO":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Inicio</B>"),styles["Center_Table"]))
+                encabezado.append(Paragraph(latin1toUTF82("<B>Inicio</B>"),styles["Center_Table"]))
             elif field == "FECHA_FINALIZACION":
-                encabezado.append(Paragraph(latin1toUTF8("<B>Finalización</B>"),styles["Center_Table"]))
+                encabezado.append(Paragraph(latin1toUTF82("<B>Final</B>"),styles["Center_Table"]))
+            elif field == "PROCESO":
+                pass
             else:
                 encabezado.append(Paragraph("<B>"+field.title()+"</B>",styles["Center_Table"]))
         array.append(encabezado)
         #print encabezado
         for row in rows:
             arrayrow=[]
+            arrayrow.append(Paragraph(ProcesoRealizado(),styles["Tabla"]))
             for field in fields:
-                if row.getValue(field)==None:
-                    arrayrow.append(Paragraph("",styles["Tabla"]))
-                else:
-                    arrayrow.append(Paragraph(latin1toUTF82(str(row.getValue(field))),styles["Tabla"]))
+                if field !="PROCESO":
+                    if row.getValue(field)==None:
+                        arrayrow.append(Paragraph("",styles["Tabla"]))
+                    else:
+                        if field=="FECHA_INICIO" or field=="FECHA_FINALIZACION":
+                            arrayrow.append(Paragraph(latin1toUTF82(str(row.getValue(field).strftime("%d/%m/%Y"))),styles["Tabla"]))
+                        else:
+                            arrayrow.append(Paragraph(latin1toUTF82(str(row.getValue(field))),styles["Tabla"]))
             array.append(arrayrow)
         return array
     except Exception as e:
@@ -220,8 +278,8 @@ if result<2000 and validacion[0]==True:
         calcularDescripcion(tablaEstadisticas,"Dom_Unidad_Medicion","UNIDAD_MEDICION")
         arcpy.AddMessage("Convirtiendo tabla")
 
-        data=TablaArray(tablaEntrada,fields)
-        print data
+        data=TablaArray(tablaEstadisticas,fields)
+        #print data
 
         ##Formateo de Actividad y Proyecto
         arcpy.AddMessage("Tabla convertida")
@@ -233,7 +291,15 @@ if result<2000 and validacion[0]==True:
         #Alineacion
         # FECHA
         fecha= datetime.date.today()
-        hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
+        hoy=""
+        if fechaPersonalizada == "false":
+            hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
+        else:
+            fechaManual=fechaManual.split(" ")[0]
+            if fechaManual.find(":")==-1:
+                hoy= "Bogotá " + fechaManual
+            else:
+                hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
 
         fechapara=Paragraph(latin1toUTF82(hoy), styles["Left"])
         elements.append(fechapara)
@@ -362,7 +428,7 @@ if result<2000 and validacion[0]==True:
         # espacio adicional
         elements.append(Spacer(0, inch*.2))
 
-        t=Table(data,colWidths=[3.0 * cm, 3.5 * cm, 1.5 * cm,3* cm, 1.5 * cm, 2 * cm,3* cm, 1.5 * cm, 2 * cm],rowHeights = [0.9*cm]* len(data),
+        t=Table(data,colWidths=[1.5 * cm,1.5 * cm, 4 * cm, 2 * cm,1.5* cm, 2 * cm, 1.5 * cm,1.5* cm, 1.5 * cm, 1.5 * cm],rowHeights = [0.7*cm]* len(data),
                         style=[
                         ('BOX', (0,0), (-1,-1), 0.25, colors.black),
                         ('FONT', (0,0),(4,0),'Helvetica-Bold',10),
@@ -372,8 +438,11 @@ if result<2000 and validacion[0]==True:
                         ])
         elements.append(t)
 
-        Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(round(suma(tablaEstadisticas,"SUM_VALOR_ACTIVIDAD"),2))),styles["Right"])
-        elements.append(Spacer(0, inch*.1))
+        Sumatorias =Paragraph("<strong>Valor Total: %s</strong> "%(str(round(suma(tablaEstadisticas,"VALOR_ACTIVIDAD"),2))),styles["Right"])
+        elements.append(Spacer(0, inch*.2))
+        convension= "("+ProcesoRealizado()+"):  " + LegendaProceso()
+        convensionElem  = Paragraph(latin1toUTF82(convension), styles["Justify"])
+        elements.append(convensionElem)
         elements.append(Sumatorias)
         elements.append(Spacer(0, inch*.4))
         #print str(valorUnico(tablaEntrada,"CONTRATISTA"))
@@ -389,6 +458,7 @@ if result<2000 and validacion[0]==True:
                         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.white),
                         ])
         elements.append(t)
+
         doc.build(elements)
         del doc
         del data

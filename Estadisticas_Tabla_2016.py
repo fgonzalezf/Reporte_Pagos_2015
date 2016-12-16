@@ -15,13 +15,66 @@ from reportlab.lib.enums import TA_CENTER,TA_JUSTIFY,TA_LEFT,TA_RIGHT
 from reportlab.lib.units import inch
 from reportlab.lib import colors
 
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+
+#Numeracion de paginas
+
+########################################################################
+class PageNumCanvas(canvas.Canvas):
+    """
+    http://code.activestate.com/recipes/546511-page-x-of-y-with-reportlab/
+    http://code.activestate.com/recipes/576832/
+    """
+
+    #----------------------------------------------------------------------
+    def __init__(self, *args, **kwargs):
+        """Constructor"""
+        canvas.Canvas.__init__(self, *args, **kwargs)
+        self.pages = []
+
+    #----------------------------------------------------------------------
+    def showPage(self):
+        """
+        On a page break, add information to the list
+        """
+        self.pages.append(dict(self.__dict__))
+        self._startPage()
+
+    #----------------------------------------------------------------------
+    def save(self):
+        """
+        Add the page number to each page (page x of y)
+        """
+        page_count = len(self.pages)
+
+        for page in self.pages:
+            self.__dict__.update(page)
+            self.draw_page_number(page_count)
+            canvas.Canvas.showPage(self)
+
+        canvas.Canvas.save(self)
+
+    #----------------------------------------------------------------------
+    def draw_page_number(self, page_count):
+        """
+        Add the page number
+        """
+        page = "Página %s de %s" % (self._pageNumber, page_count)
+        self.setFont("Helvetica", 7)
+        self.drawRightString(195*mm, 10*mm, page)
+
+
+
+
+
 styles=getSampleStyleSheet()
 styles.add(ParagraphStyle(name='Justify', alignment=TA_JUSTIFY, fontSize=8))
 styles.add(ParagraphStyle(name='Left', alignment=TA_LEFT, fontSize=8))
 styles.add(ParagraphStyle(name='Center', alignment=TA_CENTER, fontSize=8))
 styles.add(ParagraphStyle(name='Center_Table', alignment=TA_CENTER, fontSize=6.5,leading=7.5))
 styles.add(ParagraphStyle(name='Right', alignment=TA_RIGHT, fontSize=8))
-styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=6,leading=6.5))
+styles.add(ParagraphStyle(name='Tabla', alignment=TA_LEFT, fontSize=5,leading=5.2))
 
 #importar utf8
 #Parametros
@@ -41,8 +94,13 @@ NoContrato=sys.argv[3]
 reportarPeriodo=sys.argv[4]
 periodo = sys.argv[5]
 pdfSalida =sys.argv[6]
+fechaPersonalizada=sys.argv[7]
+fechaManual=sys.argv[8]
+
 
 tablaEstadisticas="in_memory\TablaEstadisticas"
+
+
 
 
 
@@ -218,12 +276,21 @@ if result<2000 and validacion[0]==True:
         arcpy.AddMessage("Tabla convertida")
         ####################
         width, height = letter
-        doc = SimpleDocTemplate(pdfSalida, pagesize=letter,rightMargin=51,leftMargin=51,topMargin=50,bottomMargin=18)
+        doc = SimpleDocTemplate(pdfSalida, pagesize=letter,rightMargin=51,leftMargin=51,topMargin=50,bottomMargin=25)
         elements = []
         #Alineacion
         # FECHA
         fecha= datetime.date.today()
-        hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
+        hoy=""
+        if fechaPersonalizada == "false":
+            hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
+        else:
+            fechaManual=fechaManual.split(" ")[0]
+            if fechaManual.find(":")==-1:
+                hoy= "Bogotá " + fechaManual
+            else:
+                hoy= "Bogotá "+fecha.strftime("%d/%m/%Y")
+                           
 
         fechapara=Paragraph(latin1toUTF8(hoy), styles["Left"])
         elements.append(fechapara)
@@ -379,7 +446,7 @@ if result<2000 and validacion[0]==True:
                         ('INNERGRID', (0,0), (-1,-1), 0.25, colors.white),
                         ])
         elements.append(t)
-        doc.build(elements)
+        doc.build(elements, canvasmaker=PageNumCanvas)
         del doc
         del data
         arcpy.Delete_management("in_memory\TablaEstadisticas")
