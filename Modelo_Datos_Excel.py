@@ -1,3 +1,5 @@
+#Encode
+
 import arcpy, os, sys
 
 GeodatabaseEntrada = r"X:\PRUEBAS\BackUp Corporativa Control\BK_27_07_2016.mdb"
@@ -85,8 +87,32 @@ for tab in ListaTablas:
     i=1
     listaC= listaCampos(GeodatabaseEntrada+os.sep+tab)
     for nombre, tipo in listaC.items():
+        wsfield['A1']="NOMBRE"
+        wsfield['B1']="TIPO CAMPO"
+        wsfield['C1']="DESCRIPCION"
+        i=i+1
         wsfield['A'+str(i)]=nombre
         wsfield['B'+str(i)]=tipo
-        i=i+1
+
+print "Creando Campos de Featuares"
+for dat in ListaDatasets:
+    des= arcpy.Describe(GeodatabaseEntrada+ os.sep+ dat)
+    wsfield= wb.create_sheet(des.name)
+    arcpy.env.workspace=GeodatabaseEntrada+ os.sep+ dat
+    listaFeat2= arcpy.ListFeatureClasses()
+    for fc in listaFeat2:
+        listaC= listaCampos(GeodatabaseEntrada+os.sep+dat+os.sep+fc)
+        des= arcpy.Describe(GeodatabaseEntrada+os.sep+dat+os.sep+fc)
+        wsfield= wb.create_sheet(des.name)
+        i=1
+        for nombre, tipo in listaC.items():
+            wsfield['A1']="NOMBRE"
+            wsfield['B1']="TIPO CAMPO"
+            wsfield['C1']="DESCRIPCION"
+            i=i+1
+            wsfield['A'+str(i)]=nombre
+            wsfield['B'+str(i)]=tipo
+
+
 
 wb.save(ExcelFile+os.sep+"sample.xlsx")
